@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  @keyframes fadeInSlide {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fadeInSlide {
+    animation: fadeInSlide 0.3s ease-out forwards;
+  }
+
+  .animate-fadeIn {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  @keyframes orbit {
+    from { transform: rotate(0deg) translateX(48px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(48px) rotate(-360deg); }
+  }
+
+  @keyframes spinSlow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .animate-orbit {
+    animation: orbit 2.6s linear infinite;
+    transform-origin: center;
+  }
+
+  .animate-spin-slow {
+    animation: spinSlow 10s linear infinite;
+  }
+
+  .fade-text {
+    transition: opacity 320ms ease-in-out, transform 320ms ease-in-out;
+  }
+}
