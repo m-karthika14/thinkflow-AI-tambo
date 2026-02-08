@@ -13,6 +13,8 @@ import RankingView from './components/tambo/RankingView';
 import ActionsView from './components/tambo/ActionsView';
 import LoadingOverlay from './components/LoadingOverlay';
 import IntroOverlay from './components/IntroOverlay';
+import AboutUs from './pages/AboutUs';
+import HowToUse from './pages/HowToUse';
 // GenerativeCanvas intentionally not used while ThinkFlow is integrating
 
 function App() {
@@ -21,7 +23,7 @@ function App() {
   const [focusedInsight, setFocusedInsight] = useState<any | null>(null);
   const [introOpen, setIntroOpen] = useState(true);
 
-  type Screen = 'HOME' | 'THINKING' | 'RESULTS' | 'FOCUS';
+  type Screen = 'HOME' | 'THINKING' | 'RESULTS' | 'FOCUS' | 'ABOUT' | 'HOWTO';
   const [screen, setScreen] = useState<Screen>('HOME');
   const thinkingTimerRef = useRef<number | null>(null);
 
@@ -264,10 +266,35 @@ function App() {
     void cancel();
   };
 
+  // Handle About and How To pages
+  if (screen === 'ABOUT') {
+    return <AboutUs onBack={() => setScreen('HOME')} />;
+  }
+  
+  if (screen === 'HOWTO') {
+    return <HowToUse onBack={() => setScreen('HOME')} />;
+  }
+
   return (
     <div className={`h-screen ${getMoodGradient()} transition-all duration-1000 relative overflow-hidden`}>
       {/* Background stays the same across every screen */}
       <NeuralBackground activeIntent={activeIntent} />
+
+      {/* Navigation Bar */}
+      <div className="absolute top-0 left-0 right-0 z-[1000] flex items-center justify-end px-6 py-4 gap-4">
+        <button
+          onClick={() => setScreen('ABOUT')}
+          className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-100 transition"
+        >
+          About Us
+        </button>
+        <button
+          onClick={() => setScreen('HOWTO')}
+          className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-100 transition"
+        >
+          How to Use
+        </button>
+      </div>
 
       <div className="relative z-10 h-screen px-6 py-6 overflow-hidden">
 
