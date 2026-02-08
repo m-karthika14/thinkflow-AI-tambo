@@ -29,7 +29,15 @@ function App() {
   // Keeping these for compatibility: the app already has a FocusPanel used by breakdown click.
   const [focusedPanel, setFocusedPanel] = useState<any | null>(null);
 
-  const { sendThreadMessage, generationStage, generationStatusMessage, cancel } = useTamboThread();
+  const tamboThread = useTamboThread();
+  const { sendThreadMessage, generationStage, generationStatusMessage, cancel, thread } = tamboThread;
+  
+  // Debug: log all available properties
+  useEffect(() => {
+    console.log('[tambo] Available thread properties:', Object.keys(tamboThread));
+    console.log('[tambo] Thread object:', thread);
+    console.log('[tambo] Thread messages:', thread?.messages);
+  }, [tamboThread, thread]);
 
   const [lastTamboMessage, setLastTamboMessage] = useState<any | null>(null);
 
@@ -54,17 +62,54 @@ function App() {
   };
 
   useEffect(() => {
-    if (!lastTamboMessage) return;
+    if (!thread?.messages) return;
     
     console.log('[tambo] Generation stage changed:', generationStage);
-    console.log('[tambo] Last message:', lastTamboMessage);
+    console.log('[tambo] Thread messages:', thread.messages);
     
     // When Tambo completes component hydration, we show RESULTS.
     if (generationStage === GenerationStage.COMPLETE) {
       console.log('[tambo] Generation COMPLETE - switching to RESULTS screen');
+      
+      // Find the most recent message with a component
+      const messagesWithComponents = thread.messages.filter(
+        (msg: any) => msg?.component?.componentName && msg?.component?.props
+      );
+      
+      console.log('[tambo] Messages with components:', messagesWithComponents);
+      
+      if (messagesWithComponents.length > 0) {
+        const latestComponentMessage = messagesWithComponents[messagesWithComponents.length - 1];
+        console.log('[tambo] ✅ Found component message:', latestComponentMessage);
+        
+        if (latestComponentMessage?.component?.componentName) {
+          // Map component names to actual React components
+          const componentMap: Record<string, any> = {
+            'TrendView': TrendView,
+            'BreakdownView': BreakdownView,
+            'RankingView': RankingView,
+            'ActionsView': ActionsView,
+          };
+          
+          const ComponentToRender = componentMap[latestComponentMessage.component.componentName];
+          
+          if (ComponentToRender) {
+            console.log('[tambo] ✅ Hydrating component:', latestComponentMessage.component.componentName);
+            const renderedComponent = <ComponentToRender {...latestComponentMessage.component.props} />;
+            
+            setLastTamboMessage({
+              ...latestComponentMessage,
+              renderedComponent,
+              _tamboHydrated: true,
+            });
+            setTamboError(null);
+          }
+        }
+      }
+      
       setScreen('RESULTS');
     }
-  }, [generationStage, lastTamboMessage]);
+  }, [generationStage, thread]);
 
   const startThinkingThenResults = (idx: number) => {
     setTamboError(null);
@@ -129,49 +174,65 @@ function App() {
         console.log('[tambo] Has rendered component:', !!msg?.renderedComponent);
         console.log('[tambo] Component:', msg?.component);
         console.log('[tambo] Component name:', msg?.component?.componentName);
+        console.log('[tambo] Component props:', msg?.component?.props);
         
-        // Check if Tambo actually rendered a component
-        // The component might be in msg.component with a componentName
-        const hasComponent = msg?.component?.componentName && msg?.component?.componentName !== '';
+        // CRITICAL DEBUG: Let's see ALL properties of msg
+        console.log('[tambo] ALL msg keys:', Object.keys(msg || {}));
+        console.log('[tambo] msg.content:', msg?.content);
         
-        if (hasComponent) {
-          console.log('[tambo] ✅ Tambo rendered component:', msg?.component?.componentName);
-          // Tambo rendered a component - use the full message
-          setLastTamboMessage(msg);
-          setTamboError(null);
+        // Tambo stores the component info in msg.component
+        // We need to manually hydrate it using our registered components
+        if (msg?.component?.componentName && msg?.component?.props) {
+          console.log('[tambo] ✅ Tambo returned component data:', msg.component.componentName);
+          
+          // Map component names to actual React components
+          const componentMap: Record<string, any> = {
+            'TrendView': TrendView,
+            'BreakdownView': BreakdownView,
+            'RankingView': RankingView,
+            'ActionsView': ActionsView,
+          };
+          
+          const ComponentToRender = componentMap[msg.component.componentName];
+          
+          if (ComponentToRender) {
+            console.log('[tambo] ✅ Hydrating component with props:', msg.component.props);
+            const renderedComponent = <ComponentToRender {...msg.component.props} />;
+            
+            setLastTamboMessage({
+              ...msg,
+              renderedComponent,
+              _tamboHydrated: true,
+            });
+            setTamboError(null);
+          } else {
+            console.error('[tambo] ❌ Unknown component name:', msg.component.componentName);
+            setTamboError(`Unknown component: ${msg.component.componentName}`);
+            setScreen('RESULTS');
+          }
         } else if (msg?.renderedComponent) {
-          console.log('[tambo] ✅ Using msg.renderedComponent');
+          console.log('[tambo] ✅ Using pre-rendered component from msg.renderedComponent');
           setLastTamboMessage(msg);
           setTamboError(null);
         } else {
-          // Tambo didn't render - we'll render the component ourselves with real data
-          console.log('[tambo] ⚠️ Tambo did not render component, rendering directly with intent:', intentLabel);
+          console.error('[tambo] ❌ No component data in response');
+          console.log('[tambo] Response structure:', {
+            hasComponent: !!msg?.component,
+            componentName: msg?.component?.componentName,
+            hasProps: !!msg?.component?.props,
+            hasRenderedComponent: !!msg?.renderedComponent,
+          });
           
-          let component;
-          switch (intentLabel) {
-            case 'EXPLORE':
-              component = <TrendView data={analytics.getRevenueTrend()} />;
-              break;
-            case 'UNDERSTAND':
-              component = <BreakdownView data={analytics.getCategoryBreakdown()} />;
-              break;
-            case 'DECIDE':
-              component = <RankingView data={analytics.getSellerRanking()} />;
-              break;
-            case 'ACT':
-              component = <ActionsView data={analytics.getActionItems()} />;
-              break;
-            default:
-              component = <TrendView data={analytics.getRevenueTrend()} />;
+          // Let's check if the component data might be somewhere else in the message
+          if (msg?.content && Array.isArray(msg.content)) {
+            console.log('[tambo] Checking msg.content for component data...');
+            msg.content.forEach((item: any, idx: number) => {
+              console.log(`[tambo] content[${idx}]:`, item);
+            });
           }
           
-          // Create a synthetic message with our rendered component
-          setLastTamboMessage({
-            ...msg,
-            renderedComponent: component,
-            _hybridRender: true,
-          });
-          setTamboError(null);
+          setTamboError('Tambo did not return component data');
+          setScreen('RESULTS');
         }
       })
       .catch((err) => {
@@ -264,8 +325,11 @@ function App() {
           </div>
 
           <div className="relative w-full pt-10">
-            <div className="mx-auto w-full max-w-5xl h-[72vh] rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_10px_30px_rgba(0,0,0,0.35)] overflow-hidden">
-              <div className="h-full w-full">
+            {/* Render results directly without the rounded 'bg card' wrapper so the
+                generated component isn't clipped. This container is intentionally
+                lightweight (no fixed height, no overflow:hidden) so Tambo-rendered
+                UIs can expand naturally. */}
+            <div className="mx-auto w-full max-w-5xl p-4 rounded-2xl overflow-auto max-h-[80vh]">
                 {tamboError ? (
                   <div className="h-full w-full flex flex-col items-center justify-center text-sm text-gray-300 px-6 text-center gap-3">
                     <div className="text-base text-red-200">Tambo failed to generate UI.</div>
@@ -295,7 +359,7 @@ function App() {
                     }}
                   >
                     <div
-                      className="h-full w-full p-4 cursor-pointer"
+                      className="w-full p-4 cursor-pointer"
                       onClick={() => {
                         // Card click enters Focus Mode (visual only).
                         setIsFocusOpen(true);
@@ -306,18 +370,17 @@ function App() {
                     </div>
                   </TamboErrorBoundary>
                 ) : lastTamboMessage ? (
-                  <div className="h-full w-full flex flex-col items-center justify-center p-8 text-center">
+                  <div className="w-full flex flex-col items-center justify-center p-8 text-center">
                     <div className="text-sm text-gray-400 mb-2">Tambo responded</div>
                     <div className="text-xs text-gray-500 max-w-md">
                       {lastTamboMessage.content?.[0]?.text || 'Response received but no UI was generated'}
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-sm text-gray-300">
+                  <div className="w-full flex items-center justify-center text-sm text-gray-300">
                     Thinking…
                   </div>
                 )}
-              </div>
             </div>
           </div>
         </div>

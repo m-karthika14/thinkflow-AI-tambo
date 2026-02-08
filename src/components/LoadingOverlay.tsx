@@ -91,7 +91,7 @@ export default function LoadingOverlay({ intervalMs = 2000, statusMessage }: Pro
 
         {/* Always-visible small core line (soft) or status message when provided */}
         <div className="text-xs text-gray-300 text-center opacity-90">
-          {statusMessage || 'Thinking… please wait'}
+          {statusMessage || ''}
         </div>
       </div>
     </div>
