@@ -16,6 +16,8 @@ Instead of forcing users to learn complex dashboards, ThinkFlow AI lets users ch
 
 The **data stays the same**.
 The **UI changes based on intent**.
+ThinkFlow AI is not another chatbot.
+It represents a new way websites and dashboards are built — where interfaces adapt to how people think.
 
 ---
 
