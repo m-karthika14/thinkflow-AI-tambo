@@ -12,12 +12,14 @@ import BreakdownView from './components/tambo/BreakdownView';
 import RankingView from './components/tambo/RankingView';
 import ActionsView from './components/tambo/ActionsView';
 import LoadingOverlay from './components/LoadingOverlay';
+import IntroOverlay from './components/IntroOverlay';
 // GenerativeCanvas intentionally not used while ThinkFlow is integrating
 
 function App() {
   const [activeIntent, setActiveIntent] = useState(0);
   const [thinkingText, setThinkingText] = useState('');
   const [focusedInsight, setFocusedInsight] = useState<any | null>(null);
+  const [introOpen, setIntroOpen] = useState(true);
 
   type Screen = 'HOME' | 'THINKING' | 'RESULTS' | 'FOCUS';
   const [screen, setScreen] = useState<Screen>('HOME');
@@ -465,6 +467,13 @@ function App() {
             }}
           />
         )}
+
+        {/* Intro Overlay - shows on first load */}
+        <IntroOverlay 
+          open={introOpen} 
+          onClose={() => setIntroOpen(false)} 
+          activeIntent={activeIntent}
+        />
       </div>
     </div>
   );
