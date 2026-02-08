@@ -152,7 +152,7 @@ This product is only possible because of **Tambo’s Generative UI model**.
 ## 🎥 Demo
 
 🎬 **YouTube Demo (≤ 3 minutes)**
-👉 *[Add demo link here]*
+👉 *https://youtu.be/G3K4JfhQr1Y?si=nnha49bYFFSzBt0q*
 
 **The demo shows:**
 
