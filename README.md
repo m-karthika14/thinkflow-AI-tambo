@@ -3,6 +3,7 @@
 # 🚀 ThinkFlow AI
 
 ### Intent-Driven Generative UI for Business Data
+We never generate answers — we generate interfaces.
 
 **Powered by Tambo**
 
